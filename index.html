@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WhatsApp DP Downloader</title>
+  <style>
+    :root {
+      --primary: #00a884;
+      --primary-dark: #008069;
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --text: #111b21;
+      --muted: #667781;
+      --border: #e9edef;
+      --radius: 16px;
+      --shadow: 0 8px 24px rgba(17, 27, 33, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 540px;
+      margin: auto 0;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: #fff;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.18);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .header h1 { font-size: 1.15rem; font-weight: 700; }
+    .header p { font-size: 0.8rem; opacity: 0.92; margin-top: 2px; }
+
+    .content { padding: 18px; }
+
+    .label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    select, input {
+      height: 48px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: #fff;
+      outline: none;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.14);
+    }
+
+    .country-select { width: 112px; padding: 0 8px; flex-shrink: 0; }
+    .phone-input { width: 100%; min-width: 0; padding: 0 14px; }
+
+    .btn-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .btn-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn {
+      width: 100%;
+      height: 46px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.12s, background 0.2s, opacity 0.2s;
+    }
+
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; }
+    .btn-outline {
+      background: #e7f8f3;
+      color: var(--primary-dark);
+      border: 1.5px solid #b5ebdc;
+    }
+    .btn-outline:hover { background: #d6f3ea; }
+    .btn-secondary { background: #f0f2f5; color: var(--text); }
+    .btn-secondary:hover { background: #e4e6eb; }
+
+    .status {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      display: none;
+      line-height: 1.45;
+    }
+    .status.show { display: block; }
+    .status.error { background: #ffecee; color: #a8001d; }
+    .status.info { background: #fff8e6; color: #7a5200; border: 1px solid #ffe08a; }
+
+    /* Synced contacts drawer */
+    .wa-contacts-box {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fafbfc;
+      display: none;
+    }
+    .wa-contacts-box.show { display: block; }
+
+    .search-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 12px;
+      font-size: 0.88rem;
+      margin-bottom: 10px;
+    }
+
+    .contacts-list {
+      max-height: 210px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .contact-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+    .contact-row:hover { border-color: var(--primary); }
+    .contact-row span { color: var(--muted); font-size: 0.76rem; }
+
+    /* Results Grid */
+    .results-grid {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .contact-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      background: #fafbfc;
+    }
+
+    .avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--primary);
+      background: #e9edef;
+    }
+
+    .c-name {
+      margin-top: 8px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .c-phone { font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
+    .c-status { font-size: 0.74rem; color: var(--muted); margin-top: 8px; min-height: 18px; }
+
+    .c-dl {
+      margin-top: 8px;
+      width: 100%;
+      height: 36px;
+      border: none;
+      border-radius: 9px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .c-dl:disabled { background: #ccd3d8; cursor: not-allowed; }
+
+    @media (max-width: 420px) {
+      .btn-row-2 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 360px) {
+      .input-group { flex-direction: column; }
+      .country-select { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <main class="app">
+    <header class="header">
+      <div class="logo" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+      <div>
+        <h1>WhatsApp DP Downloader</h1>
+        <p>Single numbers, mobile contacts &amp; synced WA contacts</p>
+      </div>
+    </header>
+
+    <section class="content">
+      <form id="singleForm" novalidate>
+        <label class="label" for="phoneInput">Country Code &amp; Phone Number</label>
+        <div class="input-group">
+          <select id="countryCode" class="country-select" aria-label="Country Code">
+            <option value="92" selected>🇵🇰 +92</option>
+            <option value="91">🇮🇳 +91</option>
+            <option value="971">🇦🇪 +971</option>
+            <option value="966">🇸🇦 +966</option>
+            <option value="44">🇬🇧 +44</option>
+            <option value="1">🇺🇸 +1</option>
+          </select>
+          <input id="phoneInput" class="phone-input" type="tel" inputmode="numeric" placeholder="300 1234567" />
+        </div>
+
+        <div class="btn-stack">
+          <button type="submit" class="btn btn-primary">Get DP</button>
+          <div class="btn-row-2">
+            <button type="button" class="btn btn-outline" id="pickContactsBtn">📱 Mobile Contacts</button>
+            <button type="button" class="btn btn-secondary" id="loadWaBtn">👥 Synced WA Contacts</button>
+          </div>
+        </div>
+      </form>
+
+      <div class="status" id="statusBox" role="alert"></div>
+
+      <div class="wa-contacts-box" id="waContactsBox">
+        <input type="search" class="search-input" id="waSearch" placeholder="Search synced WhatsApp contacts..." />
+        <div class="contacts-list" id="waContactsList"></div>
+      </div>
+
+      <div class="results-grid" id="resultsGrid"></div>
+    </section>
+  </main>
+
+  <script>
+    const countryCodeEl = document.getElementById("countryCode");
+    const phoneInputEl = document.getElementById("phoneInput");
+    const singleForm = document.getElementById("singleForm");
+    const pickContactsBtn = document.getElementById("pickContactsBtn");
+    const loadWaBtn = document.getElementById("loadWaBtn");
+    const waContactsBox = document.getElementById("waContactsBox");
+    const waSearch = document.getElementById("waSearch");
+    const waContactsList = document.getElementById("waContactsList");
+    const statusBox = document.getElementById("statusBox");
+    const resultsGrid = document.getElementById("resultsGrid");
+
+    const supportsContactPicker = "contacts" in navigator && "ContactsManager" in window;
+    let syncedContacts = [];
+
+    function showStatus(msg, type = "error") {
+      statusBox.textContent = msg;
+      statusBox.className = `status show ${type}`;
+    }
+
+    function clearStatus() {
+      statusBox.textContent = "";
+      statusBox.className = "status";
+    }
+
+    function normalizePhone(rawTel, defaultCode) {
+      const trimmed = String(rawTel || "").trim();
+      const hasPlus = trimmed.startsWith("+");
+      let digits = trimmed.replace(/\D/g, "");
+      if (!digits) return null;
+
+      if (hasPlus) return digits;
+      if (digits.startsWith("00")) return digits.slice(2);
+      if (digits.startsWith("0")) return `${defaultCode}${digits.slice(1)}`;
+      return digits.length <= 10 ? `${defaultCode}${digits}` : digits;
+    }
+
+    async function downloadFile(url, filename) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
+    }
+
+    async function fetchAndRenderContact(name, fullPhone) {
+      const card = document.createElement("div");
+      card.className = "contact-card";
+
+      const img = document.createElement("img");
+      img.className = "avatar";
+      img.alt = name;
+
+      const nameEl = document.createElement("div");
+      nameEl.className = "c-name";
+      nameEl.textContent = name || "Contact";
+
+      const phoneEl = document.createElement("div");
+      phoneEl.className = "c-phone";
+      phoneEl.textContent = `+${fullPhone}`;
+
+      const stateEl = document.createElement("div");
+      stateEl.className = "c-status";
+      stateEl.textContent = "Loading DP...";
+
+      const dlBtn = document.createElement("button");
+      dlBtn.type = "button";
+      dlBtn.className = "c-dl";
+      dlBtn.textContent = "Download";
+      dlBtn.disabled = true;
+
+      card.append(img, nameEl, phoneEl, stateEl, dlBtn);
+      resultsGrid.prepend(card);
+
+      try {
+        const res = await fetch(`/api/dp?phone=${encodeURIComponent(fullPhone)}`);
+        const data = await res.json();
+        if (!res.ok || !data.imageUrl) {
+          throw new Error(data.error || "No DP available");
+        }
+
+        img.src = data.imageUrl;
+        stateEl.textContent = "Ready";
+        dlBtn.disabled = false;
+        dlBtn.addEventListener("click", () => {
+          const safeName = (name || fullPhone).replace(/[^\w\-]+/g, "_");
+          downloadFile(data.imageUrl, `wa-dp-${safeName}.jpg`).catch(() => {
+            stateEl.textContent = "Download failed";
+          });
+        });
+      } catch (err) {
+        stateEl.textContent = err.message;
+      }
+    }
+
+    // 1. Single Manual Lookup
+    singleForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearStatus();
+      const fullPhone = normalizePhone(phoneInputEl.value, countryCodeEl.value);
+      if (!fullPhone || fullPhone.length < 7 || fullPhone.length > 15) {
+        showStatus("Please enter a valid WhatsApp number.");
+        return;
+      }
+      await fetchAndRenderContact(`+${fullPhone}`, fullPhone);
+    });
+
+    // 2. Android Chrome Native Contact Picker
+    pickContactsBtn.addEventListener("click", async () => {
+      clearStatus();
+      if (!supportsContactPicker) {
+        showStatus(
+          "Mobile Contact Picker only works on Android Chrome (HTTPS). On iPhone/PC, use 'Synced WA Contacts' or enter a number.",
+          "info"
+        );
+        return;
+      }
+
+      try {
+        const selected = await navigator.contacts.select(["name", "tel"], { multiple: true });
+        if (!selected.length) return;
+
+        const defaultCode = countryCodeEl.value;
+        const seen = new Set();
+
+        for (const person of selected) {
+          const fullPhone = normalizePhone(person.tel?.[0], defaultCode);
+          if (!fullPhone || fullPhone.length < 7 || seen.has(fullPhone)) continue;
+          seen.add(fullPhone);
+          await fetchAndRenderContact(person.name?.[0] || `+${fullPhone}`, fullPhone);
+          await new Promise((r) => setTimeout(r, 350));
+        }
+      } catch (err) {
+        showStatus("Could not open contacts: " + err.message);
+      }
+    });
+
+    // 3. Synced WhatsApp Contacts from Server (All Devices)
+    function renderWaContacts(filter = "") {
+      const q = filter.trim().toLowerCase();
+      waContactsList.innerHTML = "";
+
+      const filtered = syncedContacts.filter(
+        (c) => c.phone.includes(q) || (c.name || "").toLowerCase().includes(q)
+      );
+
+      if (!filtered.length) {
+        waContactsList.innerHTML = `<div style="font-size:0.82rem;color:#667781;padding:8px;">No contacts found yet.</div>`;
+        return;
+      }
+
+      for (const c of filtered.slice(0, 100)) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "contact-row";
+        btn.innerHTML = `<strong>${escapeHtml(c.name || "Unknown")}</strong><span>+${escapeHtml(c.phone)}</span>`;
+        btn.addEventListener("click", () => fetchAndRenderContact(c.name || `+${c.phone}`, c.phone));
+        waContactsList.appendChild(btn);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[ch]));
+    }
+
+    loadWaBtn.addEventListener("click", async () => {
+      clearStatus();
+      waContactsBox.classList.toggle("show");
+      if (!waContactsBox.classList.contains("show")) return;
+
+      try {
+        const res = await fetch("/api/contacts");
+        const data = await res.json();
+        syncedContacts = data.contacts || [];
+        renderWaContacts(waSearch.value);
+      } catch {
+        showStatus("Failed to load synced WhatsApp contacts.");
+      }
+    });
+
+    waSearch.addEventListener("input", () => renderWaContacts(waSearch.value));
+  </script>
+</body>
+</html>
